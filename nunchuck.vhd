@@ -84,7 +84,7 @@ begin
             en <= '0';
             valid <= '0';
             rw_n <= '0';
-            addr_in <= x"52";
+            addr_in <= "1010010"; --x"0052";
             err <= '0';
 
             case(nunchuck_state) is
