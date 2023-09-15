@@ -1,0 +1,99 @@
+USO DEL DISPLAY OLED:
+
+- Uso del driver OLED. Oltre agli ingressi di clock e di reset, il driver ha
+  come ingressi i valori da mostrare sul display organizzati in una sola
+  parola da 32 bit, che contiene 8 cifre esadecimali da 4 bit ciascuna. I 4
+  bit più significativi corrispondono alla cifra esadecimale più
+  significativa. È sufficiente aggiornare i valori di questi ingressi senza
+  dover fornire alcun comando aggiuntivo: il driver aggiorna il display
+  automaticamente ogni 100 ms. (se gli ingressi non cambiano, il driver
+  aggiorna comunque il display, ma i valori mostrati ovviamente non saranno
+  cambiati!).
+
+- IMPORTANTE: Sequenza di poweroff. Il modulo OLED deve essere spento secondo
+  una sequenza predefinita, per evitare di danneggiarlo. Il codice implementa
+  questa sequenza, che può essere eseguita attivando il segnale "poweroff",
+  che nel template fornito sul sito è collegato ad un pulsante. Poiché il
+  driver potrebbe essere occupato a scrivere i dati verso il modulo OLED,
+  potrebbe non rilevare immediatamente il comando di poweroff. Questo deve
+  pertanto rimanere attivo per un tempo sufficiente, dell'ordine di 0.5 ms. Se
+  collegato ad un pulsante si è praticamente sicuri di tenerlo attivo per
+  questo tempo. Diverso il caso in cui il comando venga fornito da una
+  macchina a stati, che dovrà prevedere un congruo periodo di attesa.
+
+  Eventualmente, è possibile generare un segnale di completamento della
+  sequenza di poweroff modificando il driver. In questo modo si può verificare
+  l'avvenuta esecuzione del comando.
+
+  Dopo la sequenza di poweroff la macchina a stati si pone in uno stato di off
+  da cui non è più possibile uscire. Di nuovo si può modificare il codice in
+  modo da ricevere un nuovo comando di accensione, che deve ripetere la
+  sequenza di inizializzazione (power on), andando allo stato init0.
+
+- FUNZIONAMENTO: il modulo driver prende in ingresso 8 blocchi di 4 bit, e li
+  trasforma in codice ASCII. Da questo prende da una memoria i dati per
+  mostrare i caratteri in matrici 8x8. L'operazione di scrittura avviene
+  trasferendo colonne di 8 pixel al modulo OLED tramite interfaccia SPI.
+  Questa operazione viene eseguita automaticamente ogni 100 ms. Pertanto,
+  l'utilizzatore deve semplicemente modificare i dati in ingresso, ed entro
+  100 ms questi saranno aggiornati sul display.
+
+  Eventualmente, è possibile modificare il codice in modo da aggiornare il
+  display al seguito di un comando, invece di farlo ogni 100 ms.
+
+COME UTILIZZARE IL MODULO OLED:
+
+- Creare un nuovo progetto, inizialmente senza nessun file
+
+- Selezionare "Add sources", quindi "Add or create design sources", quindi "Add
+  Files", e selezionare i seguenti file:
+
+    ascii_rom.vhd
+    oled_counter.vhd
+    delay_module.vhd
+    oled_driver.vhd
+    spi_controller.vhd
+
+  Conviene selezionare l'opzione per copiare i file all'interno del progetto,
+  in modo da averne una copia.
+
+- Fatta questa operazione, vi troverete "oled_driver" come modulo top (che
+  include poi gli altri). Questo modulo va poi instanziato nel vostro
+  progetto. Un esempio di inserimento lo potete trovare nel file:
+
+    hex_display.vhd
+  
+  che semplicemente instanzia il driver, e gli mette in ingresso delle cifre
+  esadecimali da mostrare sullo schermo. Se volete, potete includere anche
+  questo file nel progetto con la stessa procedura di prima, oppure create un
+  vostro modello che instanzia il driver. In tal caso, ricordarsi di prevedere
+  le uscite per il modulo OLED nella vostra entità, collegandole al driver.
+
+- Per la simulazione occorre fornire il reset ed il clock. Attenzione che
+  all'inizio il driver inizializza il modulo OLED: questa operazione richiede
+  un certo tempo, intorno ai 100 ms. La simulazione pertanto deve essere
+  eseguita per parecchio tempo se si vogliono osservare delle variazioni sulle
+  uscite. Un esempio di testbench può essere trovato nel file
+
+    test_driver.vhd
+
+  che genera il reset ed il clock, e pone inizialmente il segnale poweroff a
+  0, lascia il tempo per l'inizializzazione e per scrivere la stringa di
+  caratteri sul display, e quindi metter poweroff a 1 per spegnere il modulo
+  OLED. Per aggiungere il testbench al progetto potete selezionare "Add
+  sources", quindi "Add or create simulation sources", e poi "Add Files" e
+  selezionare il file, oppure ne create uno nuovo e vi copiate il contenuto.
+
+- Per la sintesi e l'implementazione occorre fornire i vincoli di progetto per
+  il clock e per il collegamento dei pin. Il clock va collegato al pin Y9 del
+  dispositivo. Le uscite per il modulo OLED devono essere collegate agli
+  appositi pin. Il file
+
+    oled_driver.xdc
+    
+  fornisce un esempio di collegamento. Anche questo file può essere aggiunto
+  al progetto con "Add or create constraints", e poi con "Add Files" lo si
+  seleziona e lo si copia. La scheda non dispone di un bottone attivo basso
+  per il reset, che è stato collegato ad un interruttore. È possibile
+  collegarlo ad un bottone, ma in tal caso occorre cambiarne la polarità
+  all'interno del VHDL.
