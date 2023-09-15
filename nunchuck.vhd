@@ -5,6 +5,9 @@ use IEEE.STD_LOGIC_1164.ALL;
 -- arithmetic functions with Signed or Unsigned values
 use IEEE.NUMERIC_STD.ALL;
 
+library work;
+use work.log2_pkg.all;
+
 -- Uncomment the following library declaration if instantiating
 -- any Xilinx leaf cells in this code.
 --library UNISIM;
@@ -28,27 +31,28 @@ entity Nunchuck is
            accZ : out STD_LOGIC_VECTOR (9 downto 0);
            valid : out std_logic;                           -- dati corretti AccX, AccY, AccZ pronti
            start : in std_logic;
+           err : out std_logic
     );
 end Nunchuck;
 
 architecture Behavioral of Nunchuck is
-    constant BYTE_BUFF_SIZE : integer := 6;
+    constant BYTE_BUFFER_SIZE : integer := 6;
     type nunchuck_state_t is (init, wait_init, idle, conversion, wait_conversion, reading, wait_reading, elaborate, to_err);                 -- idle segnale per non leggere dati dal sensore
     signal en : STD_LOGIC;
     signal rw_n : STD_LOGIC;
-    signal d_in : STD_LOGIC_VECTOR ((BYTE_BUFF_SIZE * 8) - 1 downto 0);          -- dato in
+    signal d_in : STD_LOGIC_VECTOR ((BYTE_BUFFER_SIZE * 8) - 1 downto 0);          -- dato in
     signal addr_in : STD_LOGIC_VECTOR (6 downto 0);
-    signal d_out : STD_LOGIC_VECTOR ((BYTE_BUFF_SIZE * 8) - 1 downto 0);         -- comandato dal driver
+    signal d_out : STD_LOGIC_VECTOR ((BYTE_BUFFER_SIZE * 8) - 1 downto 0);         -- comandato dal driver
     signal busy, error : STD_LOGIC;                                              -- comandati dal driver
     signal nunchuck_state : nunchuck_state_t := init;
-    signal data_length : STD_LOGIC_VECTOR (clog2(BYTE_BUFF_SIZE) downto 0);
-    signal data_length_out : STD_LOGIC_VECTOR (clog2(BYTE_BUFF_SIZE) downto 0);
+    signal data_length : STD_LOGIC_VECTOR (clog2(BYTE_BUFFER_SIZE) downto 0);
+    signal data_length_out : STD_LOGIC_VECTOR (clog2(BYTE_BUFFER_SIZE) downto 0);
 
 begin
     driver : entity work.I2C_driver
     generic map (
-        BYTE_BUFF_SIZE => BYTE_BUFF_SIZE                
-    );
+        BYTE_BUFF_SIZE => BYTE_BUFFER_SIZE                
+    )
 
     port map (
         clk => clk,
@@ -79,8 +83,9 @@ begin
         elsif rising_edge(clk) then
             en <= '0';
             valid <= '0';
-            rw_n <= 0;
+            rw_n <= '0';
             addr_in <= x"52";
+            err <= '0';
 
             case(nunchuck_state) is
 
@@ -93,10 +98,11 @@ begin
                 when wait_init =>
                     if busy = '1' then 
                         nunchuck_state <= wait_init;
-                    elsif 
-                        if err = '0' then  
+                    else 
+                        if error = '0' then  
                             nunchuck_state <= conversion;
-                        elsif nunchuck_state <= to_err;
+                        else 
+                            nunchuck_state <= to_err;
                         end if;
                     end if;
 
@@ -109,10 +115,11 @@ begin
                 when wait_conversion =>
                     if busy = '1' then 
                         nunchuck_state <= wait_conversion;
-                    elsif 
-                        if err = '0' then  
+                    else
+                        if error = '0' then  
                             nunchuck_state <= reading;
-                        elsif nunchuck_state <= to_err;
+                        else
+                            nunchuck_state <= to_err;
                         end if;
                     end if;
 
@@ -124,7 +131,7 @@ begin
                 when wait_reading =>
                     if busy = '1' then 
                         nunchuck_state <= wait_reading;
-                    elsif
+                    else
                         nunchuck_state <= elaborate;
                     end if;
 
@@ -141,12 +148,13 @@ begin
                     valid <= '1';
                     if (start = '0') then 
                         nunchuck_state <= idle;
-                    elsif 
+                    else
                         nunchuck_state <= conversion;
                     end if;
 
                 when to_err =>
                     -- so cazzi
+                    err <= '1';
 
             end case;
         end if;
