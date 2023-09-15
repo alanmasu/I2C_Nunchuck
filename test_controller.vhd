@@ -73,9 +73,36 @@ begin
     test_pro : process begin
         start <= '1';
         wait for 21.4 us;
-        sda <= '0';         --Address ACK
+        start <= '0';
+        sda <= '0';         --Init Address ACK
         wait for 1.76 us;
         sda <= 'Z';
+
+        wait for 20.685 us;
+        sda <= '0';         --Init Command ACK
+        wait for 1.81 us;
+        sda <= 'Z';
+
+        wait for 20.69 us;
+        sda <= '0';         --Init Command ACK
+        wait for 1.81 us;
+        sda <= 'Z';
+
+        wait for 23.97 us;
+        sda <= '0';         --Conv Address ACK
+        wait for 1.70 us;
+        sda <= 'Z';
+
+        wait for 20.67 us;
+        sda <= '0';         --Conv Command ACK
+        wait for 1.81 us;
+        sda <= 'Z';
+
+        wait for 23.81 us;
+        sda <= '0';         --Read Address ACK
+        wait for 1.70 us;
+        sda <= 'Z';
+
 
     
         wait;

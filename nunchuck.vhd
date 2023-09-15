@@ -47,7 +47,8 @@ architecture Behavioral of Nunchuck is
     signal nunchuck_state : nunchuck_state_t := init;
     signal data_length : STD_LOGIC_VECTOR (clog2(BYTE_BUFFER_SIZE) downto 0);
     signal data_length_out : STD_LOGIC_VECTOR (clog2(BYTE_BUFFER_SIZE) downto 0);
-
+    signal busy_count : unsigned (1 downto 0) := (others => '0');
+    signal busy_prev : STD_LOGIC := '0';
 begin
     driver : entity work.I2C_driver
     generic map (
@@ -87,15 +88,20 @@ begin
             rw_n <= '0';
             addr_in <= "1010010"; --x"0052";
             err <= '0';
-
             case(nunchuck_state) is
-
                 when init =>
-                    en <= '1';
-                    d_in <= x"0000000055F0";             
-                    data_length <= x"2"; 
-                    nunchuck_state <= wait_init;
-
+                    busy_prev <= busy;
+                    if busy_prev = '0' and busy = '1' then
+                        busy_count <= busy_count + 1;
+                    end if ;
+                    if busy_count = 0 then
+                        en <= '1';
+                        d_in <= x"0000000055F0";             
+                        data_length <= x"2"; 
+                    elsif busy_count = 1 then
+                        nunchuck_state <= wait_init;
+                        busy_count <= (others => '0');
+                    end if ;
                 when wait_init =>
                     if busy = '1' then 
                         nunchuck_state <= wait_init;
@@ -108,11 +114,18 @@ begin
                     end if;
 
                 when conversion =>
-                    en <= '1';
-                    d_in <= x"000000000000";             
-                    data_length <= x"1"; 
-                    nunchuck_state <= wait_conversion;
-
+                    busy_prev <= busy;
+                    if busy_prev = '0' and busy = '1' then
+                        busy_count <= busy_count + 1;
+                    end if ;
+                    if busy_count = 0 then
+                        en <= '1';
+                        d_in <= x"000000000000";             
+                        data_length <= x"1"; 
+                    else 
+                        nunchuck_state <= wait_conversion;
+                        busy_count <= (others => '0');
+                    end if ;
                 when wait_conversion =>
                     if busy = '1' then 
                         nunchuck_state <= wait_conversion;
@@ -125,10 +138,18 @@ begin
                     end if;
 
                 when reading =>
-                    en <= '1';
-                    rw_n <= '1';        
-                    nunchuck_state <= wait_reading;
-
+                    busy_prev <= busy;
+                    if busy_prev = '0' and busy = '1' then
+                        busy_count <= busy_count + 1;
+                    end if ;
+                    if busy_count = 0 then
+                        en <= '1';
+                        rw_n <= '1';   
+                        data_length <= x"6";
+                    else 
+                        nunchuck_state <= wait_reading;
+                        busy_count <= (others => '0');
+                    end if ;    
                 when wait_reading =>
                     if busy = '1' then 
                         nunchuck_state <= wait_reading;
@@ -147,6 +168,7 @@ begin
 
                 when idle =>
                     valid <= '1';
+                    busy_count <= (others => '0');
                     if (start = '0') then 
                         nunchuck_state <= idle;
                     else
