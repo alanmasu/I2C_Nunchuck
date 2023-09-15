@@ -80,6 +80,7 @@ begin
             d_in <= (others => '0');
             nunchuck_state <= init;
             valid <= '0';
+            err <= '0';
         elsif rising_edge(clk) then
             en <= '0';
             valid <= '0';

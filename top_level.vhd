@@ -39,7 +39,7 @@ entity top_level is
         scl : inout STD_LOGIC;
         err : out std_logic;
         valid : out std_logic;
-        start : out std_logic;
+        start : in std_logic;
         oled_sdin : out std_logic;                      -- OLED SPI data out
         oled_sclk : out std_logic;                      -- OLED SPI clock
         oled_dc : out   std_logic;                      -- OLED data/command signal
