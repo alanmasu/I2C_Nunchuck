@@ -52,7 +52,8 @@ architecture Behavioral of Nunchuck is
 begin
     driver : entity work.I2C_driver
     generic map (
-        BYTE_BUFF_SIZE => BYTE_BUFFER_SIZE                
+        BYTE_BUFF_SIZE => BYTE_BUFFER_SIZE,
+        FREQ_KHZ => 100        
     )
 
     port map (
