@@ -37,7 +37,7 @@ end Nunchuck;
 
 architecture Behavioral of Nunchuck is
     constant BYTE_BUFFER_SIZE : integer := 6;
-    type nunchuck_state_t is (init, wait_init, idle, conversion, wait_conversion, reading, wait_reading, elaborate, to_err);                 -- idle segnale per non leggere dati dal sensore
+    type nunchuck_state_t is (init, wait_init, init2, wait_init2, idle, conversion, wait_conversion, reading, wait_reading, elaborate, to_err, pause);                 -- idle segnale per non leggere dati dal sensore
     signal en : STD_LOGIC;
     signal rw_n : STD_LOGIC;
     signal d_in : STD_LOGIC_VECTOR ((BYTE_BUFFER_SIZE * 8) - 1 downto 0);          -- dato in
@@ -45,10 +45,14 @@ architecture Behavioral of Nunchuck is
     signal d_out : STD_LOGIC_VECTOR ((BYTE_BUFFER_SIZE * 8) - 1 downto 0);         -- comandato dal driver
     signal busy, error : STD_LOGIC;                                              -- comandati dal driver
     signal nunchuck_state : nunchuck_state_t := init;
+    signal nunchuck_state_resume : nunchuck_state_t := init;
     signal data_length : STD_LOGIC_VECTOR (clog2(BYTE_BUFFER_SIZE) downto 0);
     signal data_length_out : STD_LOGIC_VECTOR (clog2(BYTE_BUFFER_SIZE) downto 0);
     signal busy_count : unsigned (1 downto 0) := (others => '0');
     signal busy_prev : STD_LOGIC := '0';
+    signal pause_counter : unsigned (19 downto 0) := (others => '0');
+    constant pause_value : unsigned (19 downto 0) := to_unsigned(1000000, 20);
+    
 begin
     driver : entity work.I2C_driver
     generic map (
@@ -108,12 +112,43 @@ begin
                         nunchuck_state <= wait_init;
                     else 
                         if error = '0' then  
-                            nunchuck_state <= conversion;
+                            nunchuck_state <= pause;
+                            nunchuck_state_resume <= init2;
+                            --nunchuck_state_resume <= reading;
                         else 
                             nunchuck_state <= to_err;
                         end if;
                     end if;
-
+                when init2 =>
+                    busy_prev <= busy;
+                    if busy_prev = '0' and busy = '1' then
+                        busy_count <= busy_count + 1;
+                    end if ;
+                    if busy_count = 0 then
+                        en <= '1';
+                        d_in <= x"0000000000FB";             
+                        data_length <= x"2"; 
+                    elsif busy_count = 1 then
+                        nunchuck_state <= wait_init2;
+                        busy_count <= (others => '0');
+                    end if ;
+                when wait_init2 =>
+                    if busy = '0' then
+                        if error = '0' then  
+                            nunchuck_state <= pause;
+                            nunchuck_state_resume <= conversion;
+                        else 
+                            nunchuck_state <= to_err;
+                        end if;
+                    end if;
+                when pause =>
+                    if pause_counter = pause_value then
+                        pause_counter <= (others => '0');
+                        nunchuck_state <= nunchuck_state_resume;
+                    else
+                        pause_counter <= pause_counter + 1;
+                        nunchuck_state <= pause;
+                    end if;
                 when conversion =>
                     busy_prev <= busy;
                     if busy_prev = '0' and busy = '1' then
@@ -122,7 +157,7 @@ begin
                     if busy_count = 0 then
                         en <= '1';
                         d_in <= x"000000000000";             
-                        data_length <= x"1"; 
+                        data_length <= x"2"; 
                     else 
                         nunchuck_state <= wait_conversion;
                         busy_count <= (others => '0');
@@ -132,7 +167,8 @@ begin
                         nunchuck_state <= wait_conversion;
                     else
                         if error = '0' then  
-                            nunchuck_state <= reading;
+                            nunchuck_state <= pause;
+                            nunchuck_state_resume <= reading;
                         else
                             nunchuck_state <= to_err;
                         end if;
@@ -173,13 +209,16 @@ begin
                     if (start = '0') then 
                         nunchuck_state <= idle;
                     else
-                        nunchuck_state <= conversion;
+                        nunchuck_state <= pause;
+                        nunchuck_state_resume <= conversion;
                     end if;
 
                 when to_err =>
                     -- so cazzi
                     err <= '1';
-
+                    if start = '1' then
+                        nunchuck_state <= idle;
+                    end if ;
             end case;
         end if;
     end process msf;                                                    -- msf   
