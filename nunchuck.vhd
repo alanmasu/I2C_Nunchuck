@@ -50,7 +50,7 @@ architecture Behavioral of Nunchuck is
     signal data_length_out : STD_LOGIC_VECTOR (clog2(BYTE_BUFFER_SIZE) downto 0);
     signal busy_prev : STD_LOGIC := '0';
     signal pause_counter : unsigned (19 downto 0) := (others => '0');
-    constant pause_value : unsigned (19 downto 0) := to_unsigned(10, 20);
+    constant pause_value : unsigned (19 downto 0) := to_unsigned(1000000, 20);
     
 begin
     driver : entity work.I2C_driver
