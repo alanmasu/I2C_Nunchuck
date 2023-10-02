@@ -48,7 +48,6 @@ architecture Behavioral of Nunchuck is
     signal nunchuck_state_resume : nunchuck_state_t := init;
     signal data_length : STD_LOGIC_VECTOR (clog2(BYTE_BUFFER_SIZE) downto 0);
     signal data_length_out : STD_LOGIC_VECTOR (clog2(BYTE_BUFFER_SIZE) downto 0);
-    signal busy_count : unsigned (1 downto 0) := (others => '0');
     signal busy_prev : STD_LOGIC := '0';
     signal pause_counter : unsigned (19 downto 0) := (others => '0');
     constant pause_value : unsigned (19 downto 0) := to_unsigned(10, 20);
@@ -76,7 +75,8 @@ begin
         scl => scl
     );
 
-    msf : process( clk, res )
+    msf : process( clk, res ) is 
+        variable busy_count : unsigned (1 downto 0) := (others => '0');
     begin
         if res = '0' then 
             en <= '0';
@@ -87,60 +87,51 @@ begin
             nunchuck_state <= init;
             valid <= '0';
             err <= '0';
+            busy_count := (others => '0');
         elsif rising_edge(clk) then
             en <= '0';
             valid <= '0';
             rw_n <= '0';
             addr_in <= "1010010"; --x"0052";
             err <= '0';
+
+            --BUSY COUNT [TO TEST]
+            busy_prev <= busy;
+            if busy_prev = '0' and busy = '1' then
+                busy_count :=  busy_count + 1;
+            end if ;
+
             case(nunchuck_state) is
                 when init =>
-                    busy_prev <= busy;
-                    if busy_prev = '0' and busy = '1' then
-                        busy_count <= busy_count + 1;
-                    end if ;
+                    -- [UNCOMMENT IF TEST FAILS]
+                    -- busy_prev <= busy;
+                    -- if busy_prev = '0' and busy = '1' then
+                    --     busy_count :=  busy_count + 1;
+                    -- end if ;
                     if busy_count = 0 then
                         en <= '1';
                         d_in <= x"0000000055F0";             
                         data_length <= x"2"; 
-                    elsif busy_count = 1 then
-                        nunchuck_state <= wait_init;
-                        busy_count <= (others => '0');
+                    elsif busy_count = 1 and busy = '0' then
+                        nunchuck_state <= pause;
+                        nunchuck_state_resume <= init2;
+                        busy_count :=  (others => '0');
                     end if ;
-                when wait_init =>
-                    if busy = '1' then 
-                        nunchuck_state <= wait_init;
-                    else 
-                        if error = '0' then  
-                            nunchuck_state <= pause;
-                            nunchuck_state_resume <= init2;
-                            --nunchuck_state_resume <= reading;
-                        else 
-                            nunchuck_state <= to_err;
-                        end if;
-                    end if;
                 when init2 =>
-                    busy_prev <= busy;
-                    if busy_prev = '0' and busy = '1' then
-                        busy_count <= busy_count + 1;
-                    end if ;
+                    -- [UNCOMMENT IF TEST FAILS]
+                    -- busy_prev <= busy;
+                    -- if busy_prev = '0' and busy = '1' then
+                    --     busy_count :=  busy_count + 1;
+                    -- end if ;
                     if busy_count = 0 then
                         en <= '1';
                         d_in <= x"0000000000FB";             
                         data_length <= x"2"; 
-                    elsif busy_count = 1 then
-                        nunchuck_state <= wait_init2;
-                        busy_count <= (others => '0');
+                    elsif busy_count = 1 and busy = '0' then
+                        nunchuck_state <= pause;
+                        nunchuck_state_resume <= conversion;
+                        busy_count :=  (others => '0');
                     end if ;
-                when wait_init2 =>
-                    if busy = '0' then
-                        if error = '0' then  
-                            nunchuck_state <= pause;
-                            nunchuck_state_resume <= conversion;
-                        else 
-                            nunchuck_state <= to_err;
-                        end if;
-                    end if;
                 when pause =>
                     if pause_counter = pause_value then
                         pause_counter <= (others => '0');
@@ -150,50 +141,34 @@ begin
                         nunchuck_state <= pause;
                     end if;
                 when conversion =>
-                    busy_prev <= busy;
-                    if busy_prev = '0' and busy = '1' then
-                        busy_count <= busy_count + 1;
-                    end if ;
+                    -- [UNCOMMENT IF TEST FAILS]
+                    -- busy_prev <= busy;
+                    -- if busy_prev = '0' and busy = '1' then
+                    --     busy_count :=  busy_count + 1;
+                    -- end if ;
                     if busy_count = 0 then
                         en <= '1';
                         d_in <= x"000000000000";             
                         data_length <= x"2"; 
-                    else 
-                        nunchuck_state <= wait_conversion;
-                        busy_count <= (others => '0');
+                    elsif busy_count = 1 and busy = '0' then
+                        nunchuck_state <= pause;
+                        nunchuck_state_resume <= reading;
+                        busy_count :=  (others => '0');
                     end if ;
-                when wait_conversion =>
-                    if busy = '1' then 
-                        nunchuck_state <= wait_conversion;
-                    else
-                        if error = '0' then  
-                            nunchuck_state <= pause;
-                            nunchuck_state_resume <= reading;
-                        else
-                            nunchuck_state <= to_err;
-                        end if;
-                    end if;
-
                 when reading =>
-                    busy_prev <= busy;
-                    if busy_prev = '0' and busy = '1' then
-                        busy_count <= busy_count + 1;
-                    end if ;
+                    -- [UNCOMMENT IF TEST FAILS]
+                    -- busy_prev <= busy;
+                    -- if busy_prev = '0' and busy = '1' then
+                    --     busy_count :=  busy_count + 1;
+                    -- end if ;
                     if busy_count = 0 then
                         en <= '1';
                         rw_n <= '1';   
                         data_length <= x"6";
-                    else 
-                        nunchuck_state <= wait_reading;
-                        busy_count <= (others => '0');
-                    end if ;    
-                when wait_reading =>
-                    if busy = '1' then 
-                        nunchuck_state <= wait_reading;
-                    else
+                    elsif busy_count = 1 and busy = '0' then
                         nunchuck_state <= elaborate;
-                    end if;
-
+                        busy_count :=  (others => '0');
+                    end if ;
                 when elaborate =>
                     accX (9 downto 2) <= d_out (31 downto 24);
                     accX (1 downto 0) <= d_out (7 downto 6);
@@ -202,13 +177,12 @@ begin
                     accZ (9 downto 2) <= d_out (15 downto 8);
                     accZ (1 downto 0) <= d_out (3 downto 2);
                     nunchuck_state <= idle;
-
-                when idle =>
                     valid <= '1';
-                    busy_count <= (others => '0');
-                    if (start = '0') then 
+                when idle =>
+                    busy_count :=  (others => '0');
+                    if start = '0' then 
                         nunchuck_state <= idle;
-                    else
+                    elsif start = '1' then
                         nunchuck_state <= pause;
                         nunchuck_state_resume <= conversion;
                     end if;
@@ -219,6 +193,8 @@ begin
                     if start = '1' then
                         nunchuck_state <= idle;
                     end if ;
+                when others => 
+                    nunchuck_state <= init;
             end case;
         end if;
     end process msf;                                                    -- msf   
