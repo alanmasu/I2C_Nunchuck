@@ -71,40 +71,57 @@ begin
     end process ; -- res_gen
 
     test_pro : process begin
+        scl <= 'H';
+        sda <= 'H';
         start <= '1';
         wait for 21.4 us;
         start <= '0';
         sda <= '0';         --Init Address ACK
         wait for 1.76 us;
-        sda <= 'Z';
+        sda <= 'H';
 
         wait for 20.685 us;
         sda <= '0';         --Init Command ACK
         wait for 1.81 us;
-        sda <= 'Z';
+        sda <= 'H';
 
         wait for 20.69 us;
         sda <= '0';         --Init Command ACK
         wait for 1.81 us;
-        sda <= 'Z';
+        sda <= 'H';
 
         wait for 23.97 us;
-        sda <= '0';         --Conv Address ACK
+        sda <= '0';         --Init2 Address ACK
         wait for 1.70 us;
-        sda <= 'Z';
+        sda <= 'H';
 
-        wait for 20.67 us;
+        wait for 21.15 us;
+        sda <= '0';         --Init2 Command ACK
+        wait for 1.91 us;
+        sda <= 'H';
+
+        wait for 20.73 us;
+        sda <= '0';         --Init2 Command ACK
+        wait for 1.85 us;
+        sda <= 'H';
+
+        wait for 24.07 us;
+        sda <= '0';         --Conv Address ACK
+        wait for 1.81 us;
+        sda <= 'H';
+
+        wait for 20.85 us;
         sda <= '0';         --Conv Command ACK
         wait for 1.81 us;
-        sda <= 'Z';
+        sda <= 'H';
 
-        wait for 23.81 us;
+        wait for 46.49 us;
         sda <= '0';         --Read Address ACK
-        wait for 1.70 us;
-        sda <= 'Z';
+        wait for 1.85 us;
+        sda <= 'H';
 
 
-    
+
         wait;
     end process ; -- test_pro
 

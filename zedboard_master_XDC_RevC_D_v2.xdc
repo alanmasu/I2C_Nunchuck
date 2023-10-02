@@ -199,11 +199,11 @@ set_property PACKAGE_PIN U12  [get_ports {oled_vdd}];  # "OLED-VDD"
 # ----------------------------------------------------------------------------
 # User Push Buttons - Bank 34
 # ---------------------------------------------------------------------------- 
-set_property PACKAGE_PIN P16 [get_ports {start}];  # "BTNC"
-#set_property PACKAGE_PIN R16 [get_ports {poweroff}];  # "BTND"
-#set_property PACKAGE_PIN N15 [get_ports {screen_off}];  # "BTNL"
-## set_property PACKAGE_PIN R18 [get_ports {BTNR}];  # "BTNR"
-#set_property PACKAGE_PIN T18 [get_ports {init_oled}];  # "BTNU"
+# set_property PACKAGE_PIN P16 [get_ports {start}];  # "BTNC"
+# set_property PACKAGE_PIN R16 [get_ports {poweroff}];  # "BTND"
+# set_property PACKAGE_PIN N15 [get_ports {screen_off}];  # "BTNL"
+# set_property PACKAGE_PIN R18 [get_ports {BTNR}];  # "BTNR"
+# set_property PACKAGE_PIN T18 [get_ports {init_oled}];  # "BTNU"
 
 # ----------------------------------------------------------------------------
 # USB OTG Reset - Bank 34
@@ -233,7 +233,7 @@ set_property PACKAGE_PIN P16 [get_ports {start}];  # "BTNC"
 # ---------------------------------------------------------------------------- 
  set_property PACKAGE_PIN F22 [get_ports {res}];  # "SW0"
  set_property PACKAGE_PIN G22 [get_ports {oled_poweroff}];  # "SW1"
-# set_property PACKAGE_PIN H22 [get_ports {SW2}];  # "SW2"
+ set_property PACKAGE_PIN H22 [get_ports {start}];  # "SW2"
 # set_property PACKAGE_PIN F21 [get_ports {SW3}];  # "SW3"
 # set_property PACKAGE_PIN H19 [get_ports {SW4}];  # "SW4"
 # set_property PACKAGE_PIN H18 [get_ports {SW5}];  # "SW5"
