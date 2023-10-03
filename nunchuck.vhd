@@ -166,7 +166,13 @@ begin
                         rw_n <= '1';   
                         data_length <= x"6";
                     elsif busy_count = 1 and busy = '0' then
-                        nunchuck_state <= elaborate;
+                        if data_length_out = data_length then   --DATI CORRETTI      
+                            nunchuck_state <= pause;
+                            nunchuck_state_resume <= elaborate;
+                        else                                    --DATI ERRATI
+                            nunchuck_state <= pause;
+                            nunchuck_state_resume <= to_err;
+                        end if;
                         busy_count :=  (others => '0');
                     end if ;
                 when elaborate =>
